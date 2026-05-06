@@ -2,10 +2,11 @@ Flask
 numpy
 pandas
 requests
-tensorflow==2.15.0
+tensorflow==2.10.0
+keras==2.10.0
 supabase
 reportlab
 matplotlib
 scikit-learn
 gunicorn
-weasyprint
+
