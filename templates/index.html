@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<title>Solar Power Dashboard</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* (your styles unchanged) */
+.dashboard-title{
+display:flex;
+justify-content:center;
+align-items:center;
+gap:20px;
+flex-wrap:wrap;
+}
+.toggle-wrapper{
+display:flex;
+align-items:center;
+gap:10px;
+}
+.switch{
+position:relative;
+width:60px;
+height:30px;
+}
+.switch input{
+opacity:0;
+width:0;
+height:0;
+}
+.slider{
+position:absolute;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:linear-gradient(135deg,#6a8dff,#8ab4ff);
+border-radius:30px;
+cursor:pointer;
+}
+.slider:before{
+content:"";
+position:absolute;
+height:24px;
+width:24px;
+left:3px;
+bottom:3px;
+background:white;
+border-radius:50%;
+transition:0.4s;
+}
+input:checked + .slider:before{
+transform:translateX(30px);
+}
+.moon{
+position:fixed;
+top:60px;
+right:60px;
+width:120px;
+height:120px;
+background:#f5f3ce;
+border-radius:50%;
+box-shadow:0 0 40px rgba(255,255,255,0.6);
+display:none;
+}
+.light-mode{
+background:#f5f7fa;
+color:#333;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- 🔐 AUTH -->
+
+<div id="authBox"></div>
+
+<!-- 🌞 SUN -->
+
+<div class="sun" id="sun">
+  <div class="sun-face">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+    <div class="cheek left"></div>
+    <div class="cheek right"></div>
+    <div class="smile"></div>
+  </div>
+</div>
+
+<!-- 🌙 MOON -->
+
+<div class="moon" id="moon">
+  <div class="moon-face">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+    <div class="smile"></div>
+  </div>
+</div>
+
+<div class="dashboard">
+
+<div class="dashboard-title">
+
+<i class="fa-solid fa-solar-panel"></i>
+
+<h1>SolarPulse AI</h1>
+
+
+<div class="toggle-wrapper">
+<span>Light</span>
+
+<label class="switch">
+<input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+<span class="slider"></span>
+</label>
+
+<span>Dark</span>
+
+</div>
+<!-- 👤 USER INFO BELOW HEADER -->
+  <div id="user-info" style="margin:10px 0; text-align:right;"></div>
+
+</div>
+
+<!-- WEATHER PANEL -->
+
+<div class="weather-panel">
+
+<div class="weather-item">
+<i class="fa-solid fa-temperature-half"></i>
+<span id="tempDisplay">-- °C</span>
+</div>
+
+<div class="weather-item">
+<i class="fa-solid fa-cloud"></i>
+<span id="cloudDisplay">-- %</span>
+</div>
+
+<div class="weather-item">
+<i class="fa-solid fa-wind"></i>
+<span id="windDisplay">-- m/s</span>
+</div>
+
+<div class="weather-item">
+<i class="fa-solid fa-bolt"></i>
+<span id="radDisplay">-- W/m²</span>
+</div>
+
+</div>
+
+<!-- FORM -->
+
+<div class="form-card">
+
+<form action="/predict" method="post">
+
+<!-- ✅ ONLY ONE USER ID -->
+
+<input type="hidden" name="user_id" id="user_id">
+
+<div class="input-group">
+<i class="fa-solid fa-temperature-half"></i>
+<input type="number" step="any" name="temp" placeholder="Temperature (°C)" required>
+</div>
+
+<div class="input-group">
+<i class="fa-solid fa-droplet"></i>
+<input type="number" step="any" name="humidity" placeholder="Humidity (%)" required>
+</div>
+
+
+<div class="input-group">
+<i class="fa-solid fa-cloud"></i>
+<input type="number" step="any" name="cloud" placeholder="Cloud Cover (%)" required>
+</div>
+
+<div class="input-group">
+<i class="fa-solid fa-wind"></i>
+<input type="number" step="any" name="wind" placeholder="Wind Speed (m/s)" required>
+</div>
+
+<div class="input-group">
+<i class="fa-solid fa-bolt"></i>
+<input type="number" step="any" name="radiation" placeholder="Solar Radiation (W/m²)" required>
+</div>
+
+<div class="input-group">
+<i class="fa-solid fa-cloud-rain"></i>
+<input type="number" step="any" name="rain" placeholder="Rainfall (mm)" required>
+</div>
+
+<div class="input-group">
+<i class="fa-solid fa-calendar-day"></i>
+<input type="number" name="day" placeholder="Day (1-31)" required>
+</div>
+
+<div class="input-group">
+<i class="fa-solid fa-calendar"></i>
+<input type="number" name="month" placeholder="Month (1-12)" required>
+</div>
+
+
+<button type="submit">Predict Solar Power </button> <button type="button" class="clear-btn" onclick="clearAll()">Clear </button>
+
+{% if prediction_text %}
+
+<div class="result-card">
+
+<h2>{{ prediction_text }}</h2>
+
+<div class="chart-container">
+<canvas id="predictionChart"></canvas>
+</div>
+
+<div style="text-align:center; margin-top:20px;">
+
+<a href="/gauge/{{ prediction_value }}">
+<button type="button">View Gauge </button>
+</a>
+
+<a href="/forecast">
+<button type="button">View Forecast </button>
+</a>
+
+<a href="/download_pdf">
+<button type="button">Download Report </button>
+</a>
+
+</div>
+
+</div>
+
+<script>
+const value = Math.max({{ prediction_value }}, 1);
+const cleanValue = Number(value.toFixed(2));
+
+const color = value < 300 ? "#4CAF50" :
+              value < 700 ? "#FFC107" :
+              "#FF5722";
+
+new Chart(document.getElementById('predictionChart'), {
+type:'bar',
+data:{
+labels:['Output'],
+datasets:[{
+label:'Solar Power (kW)',
+data:[cleanValue],
+backgroundColor: color,
+borderRadius:12,
+barThickness:80
+}]
+},
+options:{
+plugins:{legend:{display:true}},
+scales:{x:{grid:{display:false}},y:{beginAtZero:true}}
+}
+});
+</script>
+
+{% endif %}
+
+</form>
+
+</div>
+
+</div>
+
+
+<!-- WEATHER -->
+
+<script>
+
+function loadWeather(lat, lon){
+
+fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,pressure_msl,cloud_cover,wind_speed_10m,shortwave_radiation`)
+.then(res => res.json())
+.then(data => {
+
+    // ✅ ONLY FILL IF EMPTY
+
+    if (!document.querySelector('[name="temp"]').value)
+        document.querySelector('[name="temp"]').value = data.current.temperature_2m;
+
+    if (!document.querySelector('[name="humidity"]').value)
+        document.querySelector('[name="humidity"]').value = data.current.relative_humidity_2m;
+
+    if (!document.querySelector('[name="cloud"]').value)
+        document.querySelector('[name="cloud"]').value = data.current.cloud_cover;
+
+    if (!document.querySelector('[name="wind"]').value)
+        document.querySelector('[name="wind"]').value = data.current.wind_speed_10m;
+
+    if (!document.querySelector('[name="radiation"]').value)
+        document.querySelector('[name="radiation"]').value = data.current.shortwave_radiation;
+
+
+// 🔥 ADD THESE LINES (IMPORTANT)
+document.querySelector('[name="rain"]').value = data.current.precipitation || 0;
+
+const today = new Date();
+document.querySelector('[name="day"]').value = today.getDate();
+document.querySelector('[name="month"]').value = today.getMonth() + 1;
+
+// DISPLAY (UNCHANGED)
+document.getElementById("tempDisplay").innerText = data.current.temperature_2m + " °C";
+document.getElementById("cloudDisplay").innerText = data.current.cloud_cover + " %";
+document.getElementById("windDisplay").innerText = data.current.wind_speed_10m + " m/s";
+const radiation = data.current.shortwave_radiation;
+document.getElementById("radDisplay").innerText =
+radiation > 0 ? radiation + " W/m²" : "No Sunlight 🌙";
+});
+}
+
+navigator.geolocation.getCurrentPosition(
+pos => loadWeather(pos.coords.latitude, pos.coords.longitude),
+() => loadWeather(28.61,77.20)
+);
+</script>
+
+<!-- CLEAR -->
+
+<script>
+function clearAll(){
+document.querySelectorAll("input:not([type='hidden'])").forEach(input => input.value = "");
+document.getElementById("tempDisplay").innerText = "-- °C";
+document.getElementById("cloudDisplay").innerText = "-- %";
+document.getElementById("windDisplay").innerText = "-- m/s";
+document.getElementById("radDisplay").innerText = "-- W/m²";
+}
+</script>
+
+<!-- THEME -->
+
+<script>
+function toggleTheme(){
+const body = document.body;
+const sun = document.getElementById("sun");
+const moon = document.getElementById("moon");
+const toggle = document.getElementById("themeToggle");
+
+if(toggle.checked){
+body.classList.remove("light-mode");
+sun.style.display = "none";
+moon.style.display = "block";
+localStorage.setItem("theme", "dark");
+} else {
+body.classList.add("light-mode");
+sun.style.display = "flex";
+moon.style.display = "none";
+localStorage.setItem("theme", "light");
+}
+}
+
+window.addEventListener("load", () => {
+const savedTheme = localStorage.getItem("theme");
+const toggle = document.getElementById("themeToggle");
+const sun = document.getElementById("sun");
+const moon = document.getElementById("moon");
+
+if(savedTheme === "light"){
+document.body.classList.add("light-mode");
+toggle.checked = false;
+sun.style.display = "flex";
+moon.style.display = "none";
+} else {
+document.body.classList.remove("light-mode");
+toggle.checked = true;
+sun.style.display = "none";
+moon.style.display = "block";
+}
+});
+</script>
+
+</body>
+</html>
