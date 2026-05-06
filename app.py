@@ -8,7 +8,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 import io
 import matplotlib.pyplot as plt
-from weasyprint import HTML
+#from weasyprint import HTML
 
 # 🔥 ADD THESE IMPORTS (NEW)
 import math
@@ -217,23 +217,15 @@ def download_pdf():
         data["peak"] = max(data["forecast"])
         data["peak_time"] = f"{data['forecast'].index(data['peak'])}:00"
 
-
-    # 👇 ADD THIS
+    # keep chart generation if you want
     chart_img = generate_chart_image(
         list(range(len(data["forecast"]))),
         data["forecast"]
     )
     data["chart"] = chart_img
 
-    rendered = render_template("pdf_template.html", data=data)
-
-    pdf = HTML(string=rendered).write_pdf()
-
-    return send_file(
-        io.BytesIO(pdf),
-        download_name="solar_report.pdf",
-        as_attachment=True
-    )
+    # 👇 TEMP FIX (no weasyprint)
+    return render_template("pdf_template.html", data=data)
 
 # ===============================
 # RUN
