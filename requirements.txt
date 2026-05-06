@@ -8,3 +8,4 @@ reportlab
 matplotlib
 scikit-learn
 gunicorn
+weasyprint
