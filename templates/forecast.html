@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>24 Hour Forecast</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+text-align:center;
+font-family:sans-serif;
+padding:40px;
+}
+
+/* TITLE */
+h1{
+margin-bottom:20px;
+}
+
+/* CONTAINER */
+.container{
+width:950px;
+margin:auto;
+background:rgba(255,255,255,0.08);
+border-radius:16px;
+padding:25px;
+box-shadow:0 0 40px rgba(255,193,7,0.3);
+}
+
+/* CHART */
+.chart-container{
+height:420px;
+}
+
+canvas{
+background:white;
+border-radius:12px;
+padding:10px;
+}
+
+/* INFO CARDS */
+.info{
+display:flex;
+justify-content:space-around;
+margin-top:20px;
+}
+
+.card{
+background:rgba(255,255,255,0.08);
+padding:12px 18px;
+border-radius:10px;
+box-shadow:0 0 15px rgba(255,193,7,0.2);
+}
+
+/* BUTTON */
+button{
+margin-top:25px;
+padding:10px 20px;
+border:none;
+border-radius:8px;
+background:linear-gradient(45deg,#ff9800,#ffb300);
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+box-shadow:0 0 15px #ffb300;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>24 Hour Solar Forecast ☀️</h1>
+
+<div class="container">
+
+<div class="chart-container">
+<canvas id="dailyChart"></canvas>
+</div>
+
+<!-- INFO -->
+<div class="info">
+<div class="card">Peak Output: <span id="peakVal">--</span> kW</div>
+<div class="card">Peak Time: <span id="peakTime">--</span></div>
+<div class="card">Status: Live Forecast 🌤</div>
+</div>
+
+<!-- BACK BUTTON -->
+<button onclick="window.history.back()">⬅ Back</button>
+
+</div>
+
+<script>
+
+let chart;
+
+/* FETCH DATA */
+async function getData(){
+    const res = await fetch("/api/forecast");
+    return await res.json();
+}
+
+/* CREATE CHART */
+async function createChart(){
+
+    const result = await getData();
+
+    const hours = result.labels;
+    const solarPrediction = result.data;
+
+    const maxValue = Math.max(...solarPrediction);
+    const peakIndex = solarPrediction.indexOf(maxValue);
+
+    // update info
+    document.getElementById("peakVal").innerText = maxValue;
+    document.getElementById("peakTime").innerText = hours[peakIndex];
+
+    const ctx = document.getElementById("dailyChart").getContext("2d");
+
+    const gradient = ctx.createLinearGradient(0,0,0,400);
+    gradient.addColorStop(0,"rgba(255,193,7,0.5)");
+    gradient.addColorStop(1,"rgba(255,193,7,0.05)");
+
+    chart = new Chart(ctx,{
+        type:"line",
+
+        data:{
+            labels: hours,
+            datasets:[{
+                label:"Solar Power (kW)",
+                data: solarPrediction,
+                borderColor:"#ff9800",
+                backgroundColor: gradient,
+                fill:true,
+                tension:0.4,
+
+                pointRadius: (ctx) =>
+                    ctx.dataIndex === peakIndex ? 8 : 4,
+
+                pointBackgroundColor: (ctx) =>
+                    ctx.dataIndex === peakIndex ? "#ff5722" : "#ff9800",
+
+                pointBorderColor:"#fff",
+                pointBorderWidth:2
+            }]
+        },
+
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+
+            plugins:{
+                legend:{
+                    labels:{color:"#333"}
+                }
+            },
+
+            scales:{
+                x:{
+                    ticks:{color:"#333"},
+                    grid:{display:false}
+                },
+                y:{
+                    beginAtZero:true,
+                    ticks:{color:"#333"},
+                    grid:{color:"rgba(0,0,0,0.1)"}
+                }
+            }
+        }
+    });
+}
+
+/* LIVE UPDATE */
+async function updateChart(){
+    const result = await getData();
+
+    chart.data.labels = result.labels;
+    chart.data.datasets[0].data = result.data;
+
+    chart.update();
+}
+
+/* INIT */
+createChart();
+
+/* AUTO REFRESH */
+setInterval(updateChart, 10000);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Solar Gauge</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+text-align:center;
+font-family:sans-serif;
+padding:40px;
+}
+
+/* TITLE */
+h1{
+margin-bottom:30px;
+}
+
+/* MAIN CARD */
+.container{
+width:500px;
+margin:auto;
+background:rgba(255,255,255,0.08);
+padding:25px;
+border-radius:16px;
+box-shadow:0 0 40px rgba(255,193,7,0.3);
+}
+
+/* GAUGE */
+canvas{
+background:rgba(255,255,255,0.95);
+border-radius:14px;
+padding:20px;
+}
+
+/* VALUE TEXT */
+.value{
+font-size:32px;
+font-weight:bold;
+margin-top:15px;
+}
+
+/* STATUS */
+.status{
+margin-top:10px;
+font-size:18px;
+font-weight:bold;
+}
+
+/* INFO CARDS */
+.info{
+display:flex;
+justify-content:space-around;
+margin-top:25px;
+}
+
+.card{
+background:rgba(255,255,255,0.08);
+padding:12px 18px;
+border-radius:10px;
+box-shadow:0 0 15px rgba(255,193,7,0.2);
+}
+
+/* BUTTON */
+button{
+margin-top:20px;
+padding:10px 20px;
+border:none;
+border-radius:8px;
+background:linear-gradient(45deg,#ff9800,#ffb300);
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+box-shadow:0 0 15px #ffb300;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Solar Power Gauge ⚡</h1>
+
+<div class="container">
+
+<canvas id="gaugeChart" width="400" height="200"></canvas>
+
+<div class="value" id="valueText">0 kW</div>
+<div class="status" id="statusText">--</div>
+
+<!-- EXTRA INFO -->
+<div class="info">
+<div class="card">Efficiency: <span id="eff">--</span>%</div>
+<div class="card">Sunlight: <span id="sun">--</span></div>
+<div class="card">Output Level: <span id="level">--</span></div>
+</div>
+
+<!-- 🔥 BACK FIX (NO RESET) -->
+<button onclick="window.history.back()">⬅ Back</button>
+
+</div>
+
+<script>
+
+const value = {{ value }};
+const maxValue = 1000;
+
+/* STATUS LOGIC */
+let status = "Low";
+let color = "#4CAF50";
+
+if(value > 700){
+    status = "High ⚡";
+    color = "#FF5722";
+}
+else if(value > 300){
+    status = "Medium ☀️";
+    color = "#FFC107";
+}
+
+/* 🔥 NEEDLE PLUGIN (ADDED ONLY) */
+const needlePlugin = {
+    id: 'needle',
+    afterDraw(chart) {
+
+        const {ctx} = chart;
+        const angle = Math.PI + (value / maxValue) * Math.PI;
+
+        const cx = chart._metasets[0].data[0].x;
+        const cy = chart._metasets[0].data[0].y;
+
+        ctx.save();
+
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(0, -3);
+        ctx.lineTo(100, 0);
+        ctx.lineTo(0, 3);
+        ctx.fillStyle = "#ff5722";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#333";
+        ctx.fill();
+
+        ctx.restore();
+    }
+};
+
+/* CHART (UNCHANGED + plugin added) */
+
+new Chart(
+document.getElementById("gaugeChart"),
+{
+type:"doughnut",
+
+data:{
+datasets:[{
+data:[value, maxValue - value],
+backgroundColor:[color, "#e0e0e0"],
+borderWidth:0
+}]
+},
+
+options:{
+rotation:-90,
+circumference:180,
+cutout:"75%",
+plugins:{
+legend:{display:false},
+tooltip:{enabled:false}
+}
+},
+
+plugins:[needlePlugin]   // 🔥 ONLY ADDITION
+});
+
+/* ANIMATED VALUE */
+let current = 0;
+const text = document.getElementById("valueText");
+
+const interval = setInterval(()=>{
+current += value/30;
+if(current >= value){
+current = value;
+clearInterval(interval);
+}
+text.innerText = current.toFixed(0) + " kW";
+},30);
+
+/* SET STATUS */
+document.getElementById("statusText").innerText = status;
+
+/* EXTRA DATA */
+document.getElementById("eff").innerText = (value/maxValue*100).toFixed(1);
+document.getElementById("sun").innerText = value > 500 ? "Strong ☀️" : "Weak 🌥️";
+document.getElementById("level").innerText = status;
+
+</script>
+
+</body>
+</html>
