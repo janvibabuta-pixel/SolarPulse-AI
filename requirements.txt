@@ -1,0 +1,10 @@
+Flask
+numpy
+pandas
+requests
+tensorflow==2.15.0
+supabase
+reportlab
+matplotlib
+scikit-learn
+gunicorn
