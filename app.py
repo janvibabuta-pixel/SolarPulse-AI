@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify, send_file, session, 
 import numpy as np
 import requests
 from tensorflow.keras.models import load_model
+
+model = load_model("solar_ann_model.h5", compile=False)
 import joblib
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
