@@ -3,7 +3,7 @@ import numpy as np
 import requests
 from tensorflow.keras.models import load_model
 
-model = load_model("solar_ann_model.h5", compile=False)
+model = load_model("solar_ann_model.keras")
 import joblib
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
