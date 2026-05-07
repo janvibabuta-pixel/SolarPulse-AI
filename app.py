@@ -1,23 +1,18 @@
-from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 import numpy as np
-import requests
-
 import joblib
-
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-import io
-import matplotlib.pyplot as plt
-#from weasyprint import HTML
-
-# 🔥 ADD THESE IMPORTS (NEW)
+import tensorflow as tf
 import math
 from datetime import date
-
 import matplotlib.pyplot as plt
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 import io
 import base64
 
+# ===============================
+# 🔥 CHART GENERATION
+# ===============================
 def generate_chart_image(labels, values):
     plt.figure(figsize=(8,4))
     plt.plot(labels, values, marker='o')
@@ -34,65 +29,50 @@ def generate_chart_image(labels, values):
     img.seek(0)
     return base64.b64encode(img.getvalue()).decode()
 
+# ===============================
+# 🔥 APP INIT
+# ===============================
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-forecast_labels_24 = None
-
 # ===============================
-# 🔥 LOAD MODEL + SCALER
+# 🔥 LOAD MODEL + SCALERS
 # ===============================
-import tensorflow as tf
-
 model = tf.keras.models.load_model(
     "solar_ann_model.keras",
     compile=False,
     safe_mode=False
 )
+
 sc_X = joblib.load("scaler_X.pkl")
 sc_y = joblib.load("scaler_y.pkl")
 
 # ===============================
-# 🔥 24 HOUR FORECAST CACHE (NEW)
+# 🔥 FORECAST CACHE
 # ===============================
 forecast_data_24 = None
 forecast_date_24 = None
+forecast_labels_24 = None
 
+# ===============================
+# 🔥 REALISTIC FORECAST
+# ===============================
 def generate_realistic_forecast(base_power):
 
     forecast = []
     labels = []
 
-    data = session.get("last_data")
-
-    # 🔥 FIX: fallback if no session
-    if not data or "features" not in data:
-        for h in range(24):
-            labels.append(f"{h}:00")
-            forecast.append(0)
-        return labels, forecast
-
-    base_features = data["features"]
-
-    for h in range(0, 24):
+    for h in range(24):
         labels.append(f"{h}:00")
 
-        temp, humidity, cloud, wind, rain, radiation, day, month = base_features
-
+        # realistic solar curve
         if h < 6 or h > 18:
-            radiation = 0
+            value = 0
         else:
-            radiation = radiation * math.sin((math.pi / 12) * (h - 6))
+            peak = math.sin((math.pi / 12) * (h - 6))
+            value = base_power * peak
 
-        radiation *= (1 - cloud / 100)
-
-        features = np.array([[temp, humidity, cloud, wind, rain, radiation, day, month]])
-        scaled = sc_X.transform(features)
-
-        pred_scaled = model.predict(scaled)
-        pred = sc_y.inverse_transform(pred_scaled)[0][0]
-
-        forecast.append(float(round(max(pred, 0), 2)))
+        forecast.append(round(max(value, 0), 2))
 
     return labels, forecast
 
@@ -103,16 +83,20 @@ def generate_realistic_forecast(base_power):
 def home():
     data = session.pop('result', None)
 
+    # 👇 IMPORTANT CHANGE
+    form_values = session.pop('form_values', None)
+
     return render_template(
         'index.html',
         prediction_text=data["prediction_text"] if data else None,
         prediction_value=data["prediction_value"] if data else None,
         forecast_data=data["forecast_data"] if data else None,
-        forecast_labels=data["forecast_labels"] if data else None
+        forecast_labels=data["forecast_labels"] if data else None,
+        form_values=form_values
     )
 
 # ===============================
-# 🔮 PREDICTION ROUTE
+# 🔮 PREDICT
 # ===============================
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -128,9 +112,20 @@ def predict():
         float(request.form["month"])
     ]
 
+        # 🔥 SAVE USER INPUTS
+    session['form_values'] = {
+        "temp": features[0],
+        "humidity": features[1],
+        "cloud": features[2],
+        "wind": features[3],
+        "rain": features[4],
+        "radiation": features[5],
+        "day": features[6],
+        "month": features[7]
+    }
+
     radiation = features[5]
 
-    # 🔥 FIX: if no radiation → directly return 0
     if radiation <= 0:
         prediction = 0.0
     else:
@@ -140,10 +135,11 @@ def predict():
         prediction_scaled = model.predict(final_scaled)
         prediction = float(sc_y.inverse_transform(prediction_scaled)[0][0])
 
-        prediction = round(abs(prediction), 2)
+        prediction = max(prediction, 0)
+        prediction = round(prediction, 2)
 
     # ===============================
-    # 📊 FORECAST (YOUR ORIGINAL - NOT TOUCHED)
+    # FORECAST
     # ===============================
     hours = list(range(6, 18))
 
@@ -176,7 +172,7 @@ def gauge(value):
     return render_template("gauge.html", value=float(value))
 
 # ===============================
-# 🌤 24 HOUR FORECAST API (UPDATED)
+# API FORECAST
 # ===============================
 @app.route("/api/forecast")
 def api_forecast():
@@ -209,28 +205,64 @@ def api_forecast():
 def forecast():
     return render_template("forecast.html")
 
-# ===============================
-# 📄 PDF DOWNLOAD
-# ===============================
+
 @app.route("/download_pdf")
 def download_pdf():
 
     data = session.get("last_data")
 
-    if data and data.get("forecast"):
-        data["peak"] = max(data["forecast"])
-        data["peak_time"] = f"{data['forecast'].index(data['peak'])}:00"
+    if not data:
+        return "No data available"
 
-    # generate chart
-    chart_img = generate_chart_image(
-        list(range(len(data["forecast"]))),
-        data["forecast"]
+    buffer = io.BytesIO()
+
+    doc = SimpleDocTemplate(buffer)
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    # TITLE
+    elements.append(Paragraph("SolarPulse AI Report", styles["Title"]))
+    elements.append(Spacer(1, 12))
+
+    # INPUTS
+    labels = [
+        "Temperature","Humidity","Cloud Cover","Wind Speed",
+        "Rainfall","Radiation","Day","Month"
+    ]
+
+    elements.append(Paragraph("Input Parameters:", styles["Heading2"]))
+    elements.append(Spacer(1, 8))
+
+    for label, val in zip(labels, data["features"]):
+        elements.append(Paragraph(f"{label}: {val}", styles["Normal"]))
+
+    elements.append(Spacer(1, 12))
+
+    # PREDICTION
+    elements.append(Paragraph("Prediction:", styles["Heading2"]))
+    elements.append(Spacer(1, 8))
+    elements.append(Paragraph(f"{data['prediction']} kW", styles["Normal"]))
+
+    elements.append(Spacer(1, 12))
+
+    # FORECAST
+    elements.append(Paragraph("Forecast (Hourly):", styles["Heading2"]))
+    elements.append(Spacer(1, 8))
+
+    for i, val in enumerate(data["forecast"]):
+        elements.append(Paragraph(f"{i+6}:00 → {val} kW", styles["Normal"]))
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="solar_report.pdf",
+        mimetype="application/pdf"
     )
-    data["chart"] = chart_img
-
-    # ✅ just render HTML (no PDF backend)
-    return render_template("pdf_template.html", data=data)
-
 # ===============================
 # RUN
 # ===============================
