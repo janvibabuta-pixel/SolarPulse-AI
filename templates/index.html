@@ -139,27 +139,22 @@ color:#333;
 <!-- WEATHER PANEL -->
 
 <div class="weather-panel">
-
-<div class="weather-item">
-<i class="fa-solid fa-temperature-half"></i>
-<span id="tempDisplay">-- °C</span>
-</div>
-
-<div class="weather-item">
-<i class="fa-solid fa-cloud"></i>
-<span id="cloudDisplay">-- %</span>
-</div>
-
-<div class="weather-item">
-<i class="fa-solid fa-wind"></i>
-<span id="windDisplay">-- m/s</span>
-</div>
-
-<div class="weather-item">
-<i class="fa-solid fa-bolt"></i>
-<span id="radDisplay">-- W/m²</span>
-</div>
-
+    <div class="weather-item">
+        <i class="fa-solid fa-temperature-half"></i>
+        <span id="tempDisplay">{{ form_values.temp if form_values else '--' }} °C</span>
+    </div>
+    <div class="weather-item">
+        <i class="fa-solid fa-cloud"></i>
+        <span id="cloudDisplay">{{ form_values.cloud if form_values else '--' }} %</span>
+    </div>
+    <div class="weather-item">
+        <i class="fa-solid fa-wind"></i>
+        <span id="windDisplay">{{ form_values.wind if form_values else '--' }} m/s</span>
+    </div>
+    <div class="weather-item">
+        <i class="fa-solid fa-bolt"></i>
+        <span id="radDisplay">{{ form_values.radiation if form_values else '--' }} W/m²</span>
+    </div>
 </div>
 
 <!-- FORM -->
