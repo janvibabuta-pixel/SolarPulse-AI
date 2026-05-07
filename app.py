@@ -39,10 +39,9 @@ app.secret_key = "secret123"
 # 🔥 LOAD MODEL + SCALERS
 # ===============================
 
-model = tf.keras.models.load_model(
-    "solar_ann_model.keras",
-    compile=False
-)
+import tensorflow as tf
+
+model = tf.keras.models.load_model("solar_ann_model.h5", compile=False)
 
 sc_X = joblib.load("scaler_X.pkl")
 sc_y = joblib.load("scaler_y.pkl")
