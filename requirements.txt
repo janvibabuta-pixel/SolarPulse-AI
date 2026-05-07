@@ -1,9 +1,9 @@
-Flask
+Flask==3.0.0
+tensorflow==2.21.0
+keras==3.14.0
 numpy
-pandas
-requests
-tensorflow==2.15.0
-reportlab
+joblib
 matplotlib
-scikit-learn
+reportlab
+h5py
 gunicorn
