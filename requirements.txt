@@ -1,6 +1,7 @@
 Flask==3.0.0
 tensorflow==2.21.0
 keras==3.14.0
+scikit-learn
 numpy
 joblib
 matplotlib
