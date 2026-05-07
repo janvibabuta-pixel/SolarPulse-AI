@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 import numpy as np
 import joblib
-import tensorflow as tf
+import keras
+from keras.models import load_model
 import math
 from datetime import date
 import matplotlib.pyplot as plt
@@ -38,11 +39,7 @@ app.secret_key = "secret123"
 # ===============================
 # 🔥 LOAD MODEL + SCALERS
 # ===============================
-model = tf.keras.models.load_model(
-    "solar_ann_model.keras",
-    compile=False,
-    safe_mode=False
-)
+model = load_model("solar_ann_model.keras", compile=False)
 
 sc_X = joblib.load("scaler_X.pkl")
 sc_y = joblib.load("scaler_y.pkl")
