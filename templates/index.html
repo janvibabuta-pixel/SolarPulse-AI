@@ -174,45 +174,59 @@ color:#333;
 
 <div class="input-group">
 <i class="fa-solid fa-temperature-half"></i>
-<input type="number" step="any" name="temp" placeholder="Temperature (°C)" required>
+<input type="number" step="any" name="temp"
+value="{{ form_values.temp if form_values else '' }}"
+placeholder="Temperature (°C)" required>
 </div>
 
 <div class="input-group">
 <i class="fa-solid fa-droplet"></i>
-<input type="number" step="any" name="humidity" placeholder="Humidity (%)" required>
+<input type="number" step="any" name="humidity"
+value="{{ form_values.humidity if form_values else '' }}"
+placeholder="Humidity (%)" required>
 </div>
-
 
 <div class="input-group">
 <i class="fa-solid fa-cloud"></i>
-<input type="number" step="any" name="cloud" placeholder="Cloud Cover (%)" required>
+<input type="number" step="any" name="cloud"
+value="{{ form_values.cloud if form_values else '' }}"
+placeholder="Cloud Cover (%)" required>
 </div>
 
 <div class="input-group">
 <i class="fa-solid fa-wind"></i>
-<input type="number" step="any" name="wind" placeholder="Wind Speed (m/s)" required>
+<input type="number" step="any" name="wind"
+value="{{ form_values.wind if form_values else '' }}"
+placeholder="Wind Speed (m/s)" required>
 </div>
 
 <div class="input-group">
 <i class="fa-solid fa-bolt"></i>
-<input type="number" step="any" name="radiation" placeholder="Solar Radiation (W/m²)" required>
+<input type="number" step="any" name="radiation"
+value="{{ form_values.radiation if form_values else '' }}"
+placeholder="Solar Radiation (W/m²)" required>
 </div>
 
 <div class="input-group">
 <i class="fa-solid fa-cloud-rain"></i>
-<input type="number" step="any" name="rain" placeholder="Rainfall (mm)" required>
+<input type="number" step="any" name="rain"
+value="{{ form_values.rain if form_values else '' }}"
+placeholder="Rainfall (mm)" required>
 </div>
 
 <div class="input-group">
 <i class="fa-solid fa-calendar-day"></i>
-<input type="number" name="day" placeholder="Day (1-31)" required>
+<input type="number" name="day"
+value="{{ form_values.day if form_values else '' }}"
+placeholder="Day (1-31)" required>
 </div>
 
 <div class="input-group">
 <i class="fa-solid fa-calendar"></i>
-<input type="number" name="month" placeholder="Month (1-12)" required>
+<input type="number" name="month"
+value="{{ form_values.month if form_values else '' }}"
+placeholder="Month (1-12)" required>
 </div>
-
 
 <button type="submit">Predict Solar Power </button> <button type="button" class="clear-btn" onclick="clearAll()">Clear </button>
 
