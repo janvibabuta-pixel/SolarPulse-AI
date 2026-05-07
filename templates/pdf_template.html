@@ -14,7 +14,27 @@ body{
 .header{
     text-align:center;
     font-size:28px;
-    margin-bottom:25px;
+    margin-bottom:10px;
+}
+
+/* BUTTON */
+.download-btn{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.download-btn button{
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    background:linear-gradient(45deg,#ff9800,#ffb300);
+    color:white;
+    cursor:pointer;
+    font-size:14px;
+}
+
+.download-btn button:hover{
+    box-shadow:0 0 10px #ffb300;
 }
 
 /* SECTION */
@@ -81,12 +101,28 @@ body{
     opacity:0.7;
 }
 
+/* PRINT FIX */
+@media print {
+    body{
+        background:white;
+        color:black;
+    }
+    .download-btn{
+        display:none;
+    }
+}
+
 </style>
 </head>
 
 <body>
 
 <div class="header">☀ SolarPulse AI Report</div>
+
+<!-- DOWNLOAD BUTTON -->
+<div class="download-btn">
+    <button onclick="window.print()">📄 Download PDF</button>
+</div>
 
 <!-- INPUTS -->
 <div class="section">
